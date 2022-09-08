@@ -3,13 +3,13 @@ CXX = g++
 AR = ar
 LD = ld
 
-CFLAGS = -g -Wall -I./
+CFLAGS = -g -Wall -I./ -I../
 
 POBJS = 
 
 TEST_MAIN = test
 
-SRC = test_log.c ../log.c
+SRC = test_queue.c ../queue.c
 
 TARGET_ALL = $(TEST_MAIN)
 

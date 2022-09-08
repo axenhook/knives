@@ -15,9 +15,7 @@ typedef struct _RADIX_NODE
 } RADIX_NODE;
 
 int RadixInsert(RADIX_NODE *node, char *str);
-
 int RadixWalkAll(RADIX_NODE *node, int (*callback)(char *));
-
 void RadixRelease(RADIX_NODE *node, int (*callback)(char *));
 
 #ifdef __cplusplus

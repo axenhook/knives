@@ -1,19 +1,4 @@
-/*******************************************************************************
 
-            Copyright(C), 2017~2020, axen.hook@foxmail.com
-********************************************************************************
-File Name: HASHTAB.H
-Author   : axen.hook
-Version  : 1.00
-Date     : 23/Jul/2017
-Description: 
-Function List: 
-    1. ...: 
-History: 
-    Version: 1.00  Author: axen.hook  Date: 23/Jul/2017
---------------------------------------------------------------------------------
-    1. Primary version
-*******************************************************************************/
 
 #ifndef __HASHTAB_H__
 #define __HASHTAB_H__
@@ -34,48 +19,48 @@ typedef struct hashtab hashtab_t;
 struct hashtab
 {
     hashtab_node_t **htable;           /* hash table */
-    uint32_t slots_num;                                         /* number of slots in hash table */
-    uint32_t key_num;                                         /* number of elements in hash table */
-    uint32_t offset; //  hash nodeÔÚÓÃ»§½á¹¹ÌåÖÐµÄÆ«ÒÆ
-    uint32_t (*keyhash)(hashtab_t *h, void *key);            /* hash function */
+    unsigned int slots_num;                                         /* number of slots in hash table */
+    unsigned int key_num;                                         /* number of elements in hash table */
+    unsigned int offset; //  hash nodeï¿½ï¿½ï¿½Ã»ï¿½ï¿½á¹¹ï¿½ï¿½ï¿½Ðµï¿½Æ«ï¿½ï¿½
+    unsigned int (*keyhash)(hashtab_t *h, void *key);            /* hash function */
     int (*keycmp)(hashtab_t *h, void *key, void *value);   /* key comparison function */
 };
 
 
-// ´´½¨hash±í
-hashtab_t *hashtab_create(uint32_t (*keyhash)(hashtab_t *h, void *key),
+// ï¿½ï¿½ï¿½ï¿½hashï¿½ï¿½
+hashtab_t *hashtab_create(unsigned int (*keyhash)(hashtab_t *h, void *key),
                           int (*keycmp)(hashtab_t *h, void *key, void *value),
-                          uint32_t slots_num, uint32_t offset);
+                          unsigned int slots_num, unsigned int offset);
 
-// Íùhash±íÖÐ²åÈëkey,value
+// ï¿½ï¿½hashï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½key,value
 int hashtab_insert(hashtab_t *h, void *key, void *value);
 
-// ´Óhash±íÖÐÉ¾³ýÖ¸¶¨key
+// ï¿½ï¿½hashï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½Ö¸ï¿½ï¿½key
 void *hashtab_delete(hashtab_t *h, void *key);  
 
-// ²éÕÒkey£¬·µ»Øvalue
+// ï¿½ï¿½ï¿½ï¿½keyï¿½ï¿½ï¿½ï¿½ï¿½ï¿½value
 void *hashtab_search(hashtab_t *h, void *key);
 
-// Ïú»Ùhash±í
+// ï¿½ï¿½ï¿½ï¿½hashï¿½ï¿½
 void hashtab_destroy(hashtab_t *h);
 
 
-// ¶Ôhash±íÖÐµÄËùÓÐkey,valueÔËÐÐapplyº¯Êý
+// ï¿½ï¿½hashï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½key,valueï¿½ï¿½ï¿½ï¿½applyï¿½ï¿½ï¿½ï¿½
 int hashtab_map(hashtab_t *h, int (*apply)(void *value, void *arg), void *args);  
 
-// hash±íÍ³¼ÆÐÅÏ¢
+// hashï¿½ï¿½Í³ï¿½ï¿½ï¿½ï¿½Ï¢
 typedef struct hashtab_info {  
     unsigned long slots_used;  
     unsigned long max_chain_len;  
 } hashtab_info_t;  
 
-// Í³¼Æhash±íÖÐÊ¹ÓÃÁË¶àÉÙ¸öslotºÍslotÖÐ×î´óÁ´±í³¤¶È
+// Í³ï¿½ï¿½hashï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½Ë¶ï¿½ï¿½Ù¸ï¿½slotï¿½ï¿½slotï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 void hashtab_stat(hashtab_t *h, hashtab_info_t *info);  
 
-// ´òÓ¡hash±íµÄslotºÍkey,valueÐÅÏ¢
+// ï¿½ï¿½Ó¡hashï¿½ï¿½ï¿½ï¿½slotï¿½ï¿½key,valueï¿½ï¿½Ï¢
 void hashtab_print(hashtab_t *h, void (*print)(void *value));  
 
-// ´Óhash±íÖÐÕª³ýµÚÒ»¸ökey£¬²¢·µ»ØÕâ¸ökeyµÄdat
+// ï¿½ï¿½hashï¿½ï¿½ï¿½ï¿½Õªï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½keyï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½keyï¿½ï¿½dat
 void *hashtab_pop_first(hashtab_t *h);
 
 #endif

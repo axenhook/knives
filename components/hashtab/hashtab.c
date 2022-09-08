@@ -1,4 +1,6 @@
-#include "os_adapter.h"
+#include <stdlib.h>
+#include <stddef.h>
+
 #include "hashtab.h"
 
 #define	HASHTAB_NODE2DATA(n, o)	((void *)((char *)(n) - (o)))
@@ -6,14 +8,14 @@
 
 
 // 创建hash表
-hashtab_t *hashtab_create(uint32_t (*keyhash)(hashtab_t *h, void *key),
+hashtab_t *hashtab_create(unsigned int (*keyhash)(hashtab_t *h, void *key),
                                int (*keycmp)(hashtab_t *h, void *key, void *value),
-                               uint32_t slots_num, uint32_t offset)
+                               unsigned int slots_num, unsigned int offset)
 {
     hashtab_t *h;
-    uint32_t i;
+    unsigned int i;
 
-    h = OS_MALLOC(sizeof(*h));
+    h = malloc(sizeof(*h));
     if (h == NULL)
         return h;
 
@@ -22,10 +24,10 @@ hashtab_t *hashtab_create(uint32_t (*keyhash)(hashtab_t *h, void *key),
     h->offset = offset;
     h->keyhash = keyhash;
     h->keycmp = keycmp;
-    h->htable = OS_MALLOC(sizeof(*(h->htable)) * slots_num);
+    h->htable = malloc(sizeof(*(h->htable)) * slots_num);
     if (h->htable == NULL)
     {
-        OS_FREE(h);
+        free(h);
         return NULL;
     }
 
@@ -38,7 +40,7 @@ hashtab_t *hashtab_create(uint32_t (*keyhash)(hashtab_t *h, void *key),
 // 往hash表中插入key,value
 int hashtab_insert(hashtab_t *h, void *key, void *value)
 {
-    uint32_t hvalue;
+    unsigned int hvalue;
     hashtab_node_t *prev, *cur, *newnode;
 
     prev = NULL;
@@ -122,7 +124,7 @@ void *hashtab_delete(hashtab_t *h, void *key)
 // 查找key，返回value
 void *hashtab_search(hashtab_t *h, void *key)
 {
-    uint32_t hvalue;
+    unsigned int hvalue;
     hashtab_node_t *cur;
 
     hvalue = h->keyhash(h, key);
@@ -139,10 +141,10 @@ void *hashtab_search(hashtab_t *h, void *key)
 // 销毁hash表
 void hashtab_destroy(hashtab_t *h)
 {
-    OS_FREE(h->htable);
+    free(h->htable);
     h->htable = NULL;
 
-    OS_FREE(h);
+    free(h);
 }
 
 // 对hash表中的所有key,value运行apply函数
@@ -168,37 +170,6 @@ int hashtab_map(hashtab_t *h, int (*apply)(void *value, void *arg), void *arg)
 
     return 0;
 }
-
-// 打印hash表的slot和key,value信息
-void hashtab_print(struct hashtab *h, void (*print)(void *value))
-{
-    unsigned long i;
-    struct hashtab_node *cur;
-    int count = 0;
-
-    printf("\n");
-
-    for (i = 0; i < h->slots_num; i++)
-    {
-        cur = h->htable[i];
-        printf("SLOT [%lu]:", i);
-
-        while (cur != NULL)
-        {
-            printf(" %p:", cur);
-            count++;
-            print(HASHTAB_NODE2DATA(cur, h->offset));
-
-            cur = cur->next;
-        }
-
-        printf("\n");
-    }
-
-    printf("Total items: %d\n", count);
-}
-
-
 
 // 统计hash表中使用了多少个slot和slot中最大链表长度
 void hashtab_stat(hashtab_t *h, hashtab_info_t *info)
@@ -249,3 +220,33 @@ void *hashtab_pop_first(hashtab_t *h)
     return NULL;
 }
 
+#include <stdio.h>
+
+// 打印hash表的slot和key,value信息
+void hashtab_print(struct hashtab *h, void (*print)(void *value))
+{
+    unsigned long i;
+    struct hashtab_node *cur;
+    int count = 0;
+
+    printf("\n");
+
+    for (i = 0; i < h->slots_num; i++)
+    {
+        cur = h->htable[i];
+        printf("SLOT [%lu]:", i);
+
+        while (cur != NULL)
+        {
+            printf(" %p:", cur);
+            count++;
+            print(HASHTAB_NODE2DATA(cur, h->offset));
+
+            cur = cur->next;
+        }
+
+        printf("\n");
+    }
+
+    printf("Total items: %d\n", count);
+}

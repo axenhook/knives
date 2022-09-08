@@ -9,7 +9,7 @@ POBJS =
 
 TEST_MAIN = test
 
-SRC = test_log.c ../log.c
+SRC = test_radix_tree.c ../radix_tree.c
 
 TARGET_ALL = $(TEST_MAIN)
 

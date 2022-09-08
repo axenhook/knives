@@ -7,16 +7,16 @@ CFLAGS = -g -Wall -I./
 
 POBJS = 
 
-TEST_MAIN = test_ini
+TEST_MAIN = test
 
-INI_SRC = test_ini.c ../ini.c
+SRC = test_ini.c ../ini.c
 
 TARGET_ALL = $(TEST_MAIN)
 
 all: $(TARGET_ALL)
 
 $(TEST_MAIN):
-	gcc -o $@ $(INI_SRC) $(CFLAGS)
+	gcc -o $@ $(SRC) $(CFLAGS)
 	
 	
 clean:
