@@ -1,5 +1,5 @@
-#ifndef INI_FILE_H_
-#define INI_FILE_H_
+#ifndef __INI_H__
+#define __INI_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,16 +22,14 @@ typedef enum tagINI_ERROR_CODE_E
 } INI_ERROR_CODE_E; /* End of INI_ERROR_CODE_E */
 
 
-extern int IniReadString(const char *v_pszFileName, const char *v_pszSection,
-    const char *v_pszKey, char *value, int size, const char *default_value);
-extern int IniReadInt(const char *v_pszFileName, const char *v_pszSection,
-    const char *v_pszKey, int default_value);
-extern int IniWriteString(const char *v_pszFileName, const char *v_pszSection,
-    const char *v_pszKey, const char *value);
+extern int IniReadString(const char *fileName, const char *section, const char *key,
+    char *value, int valueSize, const char *defaultValue);
+extern int IniReadInt(const char *fileName, const char *section, const char *key, int defaultValue);
+extern int IniWriteString(const char *fileName, const char *section, const char *key, const char *value);
 
 #ifdef __cplusplus
 };
 #endif
 
-#endif //end of INI_FILE_H_
+#endif //end of __INI_H__
 

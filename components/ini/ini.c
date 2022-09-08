@@ -1,5 +1,5 @@
 /*
-* 使用gcc -o avp_ini avp_ini.c -Wall -g -I./ -D_EN_DEBUG_进行编译链接
+* 使用gcc -o ini ini.c -Wall -g -I./ 进行编译链接
 */
 
 #include <stdio.h>
@@ -21,60 +21,60 @@
 #define LINE_END    '\r'  /* 0x0D */
 #define STR_END     '\0'  /* 0x00 */
 
-static int IsNewLine(char v_c)
+static int IsNewLine(char c)
 {
-	return ((LINE_CHANGE == v_c) ||  (LINE_END == v_c)) ? 1 : 0;
+	return ((LINE_CHANGE == c) ||  (LINE_END == c)) ? 1 : 0;
 }
 
-static int IsStrEnd(char v_c)
+static int IsStrEnd(char c)
 {
-	return (STR_END == v_c) ? 1 : 0;
+	return (STR_END == c) ? 1 : 0;
 }
 
-static int IsLeftBrace(char v_c)
+static int IsLeftBrace(char c)
 {
-	return (LEFT_BRACE == v_c) ? 1 : 0;
+	return (LEFT_BRACE == c) ? 1 : 0;
 }
 
-static int IsRightBrace(char v_c)
+static int IsRightBrace(char c)
 {
-	return (RIGHT_BRACE == v_c) ? 1 : 0;
+	return (RIGHT_BRACE == c) ? 1 : 0;
 }
 
 /*******************************************************************************
 函数名称: LoadIniFile
 功能说明: 将ini文件的内容载入内存
 输入参数:
-    v_pszFileName: 要装载的ini文件名
+    fileName: 要装载的ini文件名
 输出参数:
-    v_pszBuf     : 要装载到内存
-    v_piFileSize : 文件的大小
+    buf      : 要装载到内存
+    fileSize : 文件的大小
 返 回 值:
     >=0: 成功
     < 0: 错误代码
 说    明: 无
 *******************************************************************************/
-static int LoadIniFile(const char *v_pszFileName,
-    char *v_pszBuf, int *v_piFileSize)
+static int LoadIniFile(const char *fileName,
+    char *buf, int *fileSize)
 {
-	FILE *pstFile = NULL;
+	FILE *f = NULL;
 	int i = 0;
 
-	assert(NULL != v_pszFileName);
-	assert(NULL != v_pszBuf);
+	assert(NULL != fileName);
+	assert(NULL != buf);
 
-	*v_piFileSize = 0;
+	*fileSize = 0;
 
     /* 以只读方式打开文件 */
-	pstFile = fopen(v_pszFileName, "r");
-	if (NULL == pstFile)
+	f = fopen(fileName, "r");
+	if (NULL == f)
     {
 		return -INI_ERR_OPEN_FILE_FOR_READ;
 	}
 
 	/* 装载文件 */
-	v_pszBuf[i] = fgetc(pstFile);
-	while (v_pszBuf[i] != (char)EOF)
+	buf[i] = fgetc(f);
+	while (buf[i] != (char)EOF)
     {
 		i++;
 		if (i >= INI_MAX_FILE_SIZE)
@@ -82,13 +82,13 @@ static int LoadIniFile(const char *v_pszFileName,
             return -INI_ERR_FILE_TOO_LARGE;
 		}
 
-		v_pszBuf[i] = fgetc(pstFile);
+		buf[i] = fgetc(f);
 	}
 
-	v_pszBuf[i] = STR_END;
-	*v_piFileSize = i;
+	buf[i] = STR_END;
+	*fileSize = i;
 
-	fclose(pstFile);
+	fclose(f);
 
 	return 0;
 }
@@ -97,36 +97,36 @@ static int LoadIniFile(const char *v_pszFileName,
 函数名称: SaveIniFile
 功能说明: 将内存中的内容写入到ini文件中去
 输入参数:
-    v_pszFileName: 要装载的ini文件名
-    v_pszBuf     : 要装载到内存
+    fileName: 要装载的ini文件名
+    buf     : 要装载到内存
 输出参数: 无
 返 回 值:
     >=0: 成功
     < 0: 错误代码
 说    明: 无
 *******************************************************************************/
-static int SaveIniFile(const char *v_pszFileName, const char *v_pszBuf)
+static int SaveIniFile(const char *fileName, const char *buf)
 {
-	FILE *pstFile = NULL;
+	FILE *f = NULL;
 
-	assert(NULL != v_pszFileName);
-	assert(NULL != v_pszBuf);
+	assert(NULL != fileName);
+	assert(NULL != buf);
 
     /* 以只写方式打开文件 */
-	pstFile = fopen(v_pszFileName, "w");
-	if (NULL == pstFile)
+	f = fopen(fileName, "w");
+	if (NULL == f)
     {
 		return -INI_ERR_OPEN_FILE_FOR_WRITE;
 	}
 
 	/* 写入文件 */
-	if (EOF == fputs(v_pszBuf, pstFile))
+	if (EOF == fputs(buf, f))
 	{
-		fclose(pstFile);
+		fclose(f);
 		return -INI_ERR_WRITE_FILE;
 	}
 
-	fclose(pstFile);
+	fclose(f);
 
 	return 0;
 }
@@ -135,16 +135,16 @@ static int SaveIniFile(const char *v_pszFileName, const char *v_pszBuf)
 函数名称: ParseFile
 功能说明: 无
 输入参数:
-    v_pszBuf     : 装载有ini文件内容的内存
-    v_pszSection : 要查找的section的名字
-    v_pszKey     : 要查找的key的名字
+    buf     : 装载有ini文件内容的内存
+    section : 要查找的section的名字
+    key     : 要查找的key的名字
 输出参数:
-    v_piSecStart  : section的起始位置
-    v_piSecEnd    : section的结束位置
-    v_piKeyStart  : key的起始位置
-    v_piKeyEnd    : key的结束位置
-    v_piValueStart: value的起始位置
-    v_piValueEnd  : value的结束位置
+    sectionBegin  : section的起始位置
+    sectionEnd    : section的结束位置
+    keyBegin  : key的起始位置
+    keyEnd    : key的结束位置
+    valueBegin: value的起始位置
+    valueEnd  : value的结束位置
 返 回 值:
     >=0: 成功
     < 0: 错误代码
@@ -153,34 +153,34 @@ static int SaveIniFile(const char *v_pszFileName, const char *v_pszBuf)
 #if 0
 
 static int ParseFile(
-    const char *v_pszBuf, const char *v_pszSection, const char *v_pszKey,
-    int *v_piSecStart, int *v_piSecEnd, int *v_piKeyStart, int *v_piKeyEnd,
-    int *v_piValueStart, int *v_piValueEnd)
+    const char *buf, const char *section, const char *key,
+    int *sectionBegin, int *sectionEnd, int *keyBegin, int *keyEnd,
+    int *valueBegin, int *valueEnd)
 {
-	const char *p = v_pszBuf;
+	const char *p = buf;
 	int i = 0;
-	int iSecLen;
-	int iKeyLen;
+	int sectionLen;
+	int keyLen;
 
-    iSecLen = strlen(v_pszSection);
-    iKeyLen  = strlen(v_pszKey);
+    sectionLen = strlen(section);
+    keyLen  = strlen(key);
 
-	assert(NULL != v_pszBuf);
-	assert((NULL != v_pszSection) && (0 != iSecLen));
-	assert((NULL != v_pszKey) && (0 != iKeyLen));
+	assert(NULL != buf);
+	assert((NULL != section) && (0 != sectionLen));
+	assert((NULL != key) && (0 != keyLen));
 
-    *v_piSecStart = UNKNOW_POS;
-	*v_piSecEnd = UNKNOW_POS;
-    *v_piKeyStart = UNKNOW_POS;
-    *v_piKeyEnd = UNKNOW_POS;
-    *v_piValueStart = UNKNOW_POS;
-    *v_piValueEnd = UNKNOW_POS;
+    *sectionBegin = UNKNOW_POS;
+	*sectionEnd = UNKNOW_POS;
+    *keyBegin = UNKNOW_POS;
+    *keyEnd = UNKNOW_POS;
+    *valueBegin = UNKNOW_POS;
+    *valueEnd = UNKNOW_POS;
 
 	while (!IsStrEnd(p[i]))
     {
 		if (((0 == i) ||  IsNewLine(p[i-1])) && IsLeftBrace(p[i]))
 		{ /* 找到了'[' */
-			int iSecStart = i + 1;
+			int secBegin = i + 1;
 
 			/* 寻找']' */
 			do
@@ -188,10 +188,10 @@ static int ParseFile(
 				i++;
 			} while (!IsRightBrace(p[i]) && !IsStrEnd(p[i]));
 
-			if ((0 == strncmp(p + iSecStart, v_pszSection, i - iSecStart))
-                && (iSecLen == i - iSecStart))
+			if ((0 == strncmp(p + secBegin, section, i - secBegin))
+                && (sectionLen == i - secBegin))
             {
-				int iNewLineStart = 0;
+				int newLineBegin = 0;
 
 				i++;
 
@@ -202,8 +202,8 @@ static int ParseFile(
 				}
 
 				/* 找到了section */
-				*v_piSecStart = iSecStart;
-				*v_piSecEnd = i;
+				*sectionBegin = secBegin;
+				*sectionEnd = i;
 
 				while (!(IsNewLine(p[i-1]) && IsLeftBrace(p[i]))
 				    && !IsStrEnd(p[i]))
@@ -211,7 +211,7 @@ static int ParseFile(
 					int j = 0;
 
 					/* 到了一个新行 */
-					iNewLineStart = i;
+					newLineBegin = i;
 
 					while (!IsNewLine(p[i]) && !IsStrEnd(p[i]))
                     {
@@ -219,7 +219,7 @@ static int ParseFile(
 					}
 
 					/* now i  is equal to end of the line */
-					j = iNewLineStart;
+					j = newLineBegin;
 
 					if (';' != p[j]) /* skip over comment */
 					{
@@ -228,15 +228,15 @@ static int ParseFile(
 							j++;
 							if ('=' == p[j])
                             {
-								if ((strncmp(v_pszKey,p+iNewLineStart,j-iNewLineStart)==0)
-                                    && (iKeyLen==j-iNewLineStart))
+								if ((strncmp(key,p+newLineBegin,j-newLineBegin)==0)
+                                    && (keyLen==j-newLineBegin))
 								{
 									/*find the key ok */
-									*v_piKeyStart = iNewLineStart;
-									*v_piKeyEnd = j-1;
+									*keyBegin = newLineBegin;
+									*keyEnd = j-1;
 
-									*v_piValueStart = j+1;
-									*v_piValueEnd = i;
+									*valueBegin = j+1;
+									*valueEnd = i;
 
 									return 0;
 								}
@@ -260,34 +260,34 @@ static int ParseFile(
 #else
 
 static int ParseFile(
-    const char *v_pszBuf, const char *v_pszSection, const char *v_pszKey,
-    int *v_piSecStart, int *v_piSecEnd, int *v_piKeyStart, int *v_piKeyEnd,
-    int *v_piValueStart, int *v_piValueEnd)
+    const char *buf, const char *section, const char *key,
+    int *sectionBegin, int *sectionEnd, int *keyBegin, int *keyEnd,
+    int *valueBegin, int *valueEnd)
 {
-	const char *p = v_pszBuf;
+	const char *p = buf;
 	int i = 0;
-	int iSecLen;
-	int iKeyLen;
+	int sectionLen;
+	int keyLen;
 
-    iSecLen = strlen(v_pszSection);
-    iKeyLen  = strlen(v_pszKey);
+    sectionLen = strlen(section);
+    keyLen  = strlen(key);
 
-	assert(NULL != v_pszBuf);
-	assert((NULL != v_pszSection) && (0 != iSecLen));
-	assert((NULL != v_pszKey) && (0 != iKeyLen));
+	assert(NULL != buf);
+	assert((NULL != section) && (0 != sectionLen));
+	assert((NULL != key) && (0 != keyLen));
 
-    *v_piSecStart = UNKNOW_POS;
-	*v_piSecEnd = UNKNOW_POS;
-    *v_piKeyStart = UNKNOW_POS;
-    *v_piKeyEnd = UNKNOW_POS;
-    *v_piValueStart = UNKNOW_POS;
-    *v_piValueEnd = UNKNOW_POS;
+    *sectionBegin = UNKNOW_POS;
+	*sectionEnd = UNKNOW_POS;
+    *keyBegin = UNKNOW_POS;
+    *keyEnd = UNKNOW_POS;
+    *valueBegin = UNKNOW_POS;
+    *valueEnd = UNKNOW_POS;
 
 	while (!IsStrEnd(p[i]))
     {
 		if (((0 == i) ||  IsNewLine(p[i-1])) && IsLeftBrace(p[i]))
 		{ /* 找到了'[' */
-			int iSecStart = i + 1;
+			int secBegin = i + 1;
 
 			/* 寻找']' */
 			do
@@ -295,10 +295,10 @@ static int ParseFile(
 				i++;
 			} while (!IsRightBrace(p[i]) && !IsStrEnd(p[i]));
 
-			if ((0 == strncmp(p + iSecStart, v_pszSection, i - iSecStart))
-                && (iSecLen == i - iSecStart))
+			if ((0 == strncmp(p + secBegin, section, i - secBegin))
+                && (sectionLen == i - secBegin))
             {
-				int iNewLineStart = 0;
+				int newLineBegin = 0;
 
 				i++;
 
@@ -309,8 +309,8 @@ static int ParseFile(
 				}
 
 				/* 找到了section */
-				*v_piSecStart = iSecStart;
-				*v_piSecEnd = i;
+				*sectionBegin = secBegin;
+				*sectionEnd = i;
 
 				while (!(IsNewLine(p[i-1]) && IsLeftBrace(p[i]))
 				    && !IsStrEnd(p[i]))
@@ -318,7 +318,7 @@ static int ParseFile(
 					int j = 0;
 
 					/* 到了一个新行 */
-					iNewLineStart = i;
+					newLineBegin = i;
 
 					while (!IsNewLine(p[i]) && !IsStrEnd(p[i]))
                     {
@@ -326,7 +326,7 @@ static int ParseFile(
 					}
 
 					/* now i  is equal to end of the line */
-					j = iNewLineStart;
+					j = newLineBegin;
 
 					if (';' != p[j]) /* skip over comment */
 					{
@@ -335,15 +335,15 @@ static int ParseFile(
 							j++;
 							if ('=' == p[j])
                             {
-								if ((strncmp(v_pszKey,p+iNewLineStart,j-iNewLineStart)==0)
-                                    && (iKeyLen==j-iNewLineStart))
+								if ((strncmp(key,p+newLineBegin,j-newLineBegin)==0)
+                                    && (keyLen==j-newLineBegin))
 								{
 									/*find the key ok */
-									*v_piKeyStart = iNewLineStart;
-									*v_piKeyEnd = j-1;
+									*keyBegin = newLineBegin;
+									*keyEnd = j-1;
 
-									*v_piValueStart = j+1;
-									*v_piValueEnd = i;
+									*valueBegin = j+1;
+									*valueEnd = i;
 
 									return 0;
 								}
@@ -370,13 +370,13 @@ static int ParseFile(
 函数名称: IniReadString
 功能说明: 从ini文件中读指定字段的值
 输入参数:
-    v_pszFileName    : 要读取的ini文件名
-    v_pszSection     : 要读取的section的名字
-    v_pszKey         : 要读取的key的名字
-    iValueSize       : 读取到的value的最大长度
-    v_pszDefaultValue: 如果找不到对应的字段，那么就将此默认值赋值给v_pszValue
+    fileName    : 要读取的ini文件名
+    section     : 要读取的section的名字
+    key         : 要读取的key的名字
+    valueSize       : 读取到的value的最大长度
+    defaultValue: 如果找不到对应的字段，那么就将此默认值赋值给value
 输出参数:
-    v_pszValue   : 读取到的value值
+    value   : 读取到的value值
 返 回 值:
     > 0: 成功代码
     ==0: 成功
@@ -384,87 +384,87 @@ static int ParseFile(
 说    明: 无
 *******************************************************************************/
 int IniReadString(
-    const char *v_pszFileName, const char *v_pszSection, const char *v_pszKey,
-    char *v_pszValue, int v_iValueSize, const char *v_pszDefaultValue)
+    const char *fileName, const char *section, const char *key,
+    char *value, int valueSize, const char *defaultValue)
 {
-	char *pszBuf = NULL;
-	int iFileSize = 0;
-	int iSecStart = 0;
-    int iSecEnd = 0;
-    int iKeyStart= 0;
-    int iKeyEnd = 0;
-    int iValueStart = 0;
-    int iValueEnd = 0;
-    int iCopyCnt = 0;
+	char *buf = NULL;
+	int fileSize = 0;
+	int secBegin = 0;
+    int secEnd = 0;
+    int keyBegin= 0;
+    int keyEnd = 0;
+    int valueBegin = 0;
+    int valueEnd = 0;
+    int copyCnt = 0;
 
 	/* 检查参数 */
-    if ((NULL == v_pszFileName) || (0 == strlen(v_pszFileName)))
+    if ((NULL == fileName) || (0 == strlen(fileName)))
     {
         return -INI_ERR_NO_FILE_NAME;
     }
 
-    if ((NULL == v_pszSection) || (0 == strlen(v_pszSection)))
+    if ((NULL == section) || (0 == strlen(section)))
     {
         return -INI_ERR_NO_SECTION;
     }
 
-    if ((NULL == v_pszKey) || (0 == strlen(v_pszKey)))
+    if ((NULL == key) || (0 == strlen(key)))
     {
         return -INI_ERR_NO_KEY;
     }
 
-    if ((NULL == v_pszValue) || (0 >= v_iValueSize))
+    if ((NULL == value) || (0 >= valueSize))
     {
         return -INI_ERR_NO_VALUE;
     }
 
     /* 分配内存 */
-    pszBuf = malloc(INI_MAX_FILE_SIZE);
-    if (NULL == pszBuf)
+    buf = malloc(INI_MAX_FILE_SIZE);
+    if (NULL == buf)
     {
         return -INI_ERR_MALLOC;
     }
 
     /* 载入文件 */
-	if (0 != LoadIniFile(v_pszFileName, pszBuf, &iFileSize))
+	if (0 != LoadIniFile(fileName, buf, &fileSize))
 	{ /* 载入失败 */
-		if (NULL != v_pszDefaultValue)
+		if (NULL != defaultValue)
 		{
-			strncpy(v_pszValue, v_pszDefaultValue, v_iValueSize);
-            free(pszBuf);
+			strncpy(value, defaultValue, valueSize);
+            free(buf);
             return INI_ERR_LOAD_FILE;
 		}
 
-        free(pszBuf);
+        free(buf);
 		return -INI_ERR_LOAD_FILE;
 	}
 
-	if (0 != ParseFile(pszBuf, v_pszSection, v_pszKey, &iSecStart, &iSecEnd,
-        &iKeyStart, &iKeyEnd, &iValueStart, &iValueEnd))
+	if (0 != ParseFile(buf, section, key, &secBegin, &secEnd,
+        &keyBegin, &keyEnd, &valueBegin, &valueEnd))
 	{ /* 指定字段未找到 */
-		if (NULL != v_pszDefaultValue)
+		if (NULL != defaultValue)
 		{
-			strncpy(v_pszValue, v_pszDefaultValue, v_iValueSize);
-            free(pszBuf);
+			strncpy(value, defaultValue, valueSize);
+            free(buf);
             return INI_ERR_PARSE_FILE;
 		}
 
-        free(pszBuf);
+        free(buf);
 		return -INI_ERR_PARSE_FILE;
 	}
 
-	iCopyCnt = iValueEnd - iValueStart;
+	copyCnt = valueEnd - valueBegin;
 
     /* 扣除字符串结束符，所以要-1 */
-	if ((v_iValueSize - 1) < iCopyCnt)
+	if ((valueSize - 1) < copyCnt)
 	{
-		iCopyCnt = (v_iValueSize - 1);
+		copyCnt = (valueSize - 1);
 	}
 
-	memcpy(v_pszValue, pszBuf + iValueStart, iCopyCnt);
-	v_pszValue[iCopyCnt] = STR_END;
+	memcpy(value, buf + valueBegin, copyCnt);
+	value[copyCnt] = STR_END;
 
-    free(pszBuf);
+    free(buf);
 	return 0;
 }
 
@@ -472,10 +472,10 @@ int IniReadString(
 函数名称: IniWriteString
 功能说明: 将值写入ini文件的指定字段
 输入参数:
-    v_pszFileName    : 要写入的ini文件名
-    v_pszSection     : 要写入的section的名字
-    v_pszKey         : 要写入的key的名字
-    v_pszValue       : 要写入的value值
+    fileName    : 要写入的ini文件名
+    section     : 要写入的section的名字
+    key         : 要写入的key的名字
+    value       : 要写入的value值
 输出参数: 无
 返 回 值:
     >=0: 成功
@@ -483,101 +483,101 @@ int IniReadString(
 说    明: 无
 *******************************************************************************/
 int IniWriteString(
-    const char *v_pszFileName, const char *v_pszSection, const char *v_pszKey,
-    const char *v_pszValue)
+    const char *fileName, const char *section, const char *key,
+    const char *value)
 {
-	char *pszWrBuf = NULL;
-	char *pszBuf = NULL;
-	int iFileSize = 0;
-	int iRet = 0;
-	int iSecStart = UNKNOW_POS;
-    int iSecEnd = 0;
-    int iKeyStart= 0;
-    int iKeyEnd = 0;
-    int iValueStart = 0;
-    int iValueEnd = 0;
-    int iValueSize = (int)strlen(v_pszValue);
+	char *wrBuf = NULL;
+	char *buf = NULL;
+	int fileSize = 0;
+	int ret = 0;
+	int secBegin = UNKNOW_POS;
+    int secEnd = 0;
+    int keyBegin= 0;
+    int keyEnd = 0;
+    int valueBegin = 0;
+    int valueEnd = 0;
+    int valueSize = (int)strlen(value);
 
 	/* 检查参数 */
-    if ((NULL == v_pszFileName) || (0 == strlen(v_pszFileName)))
+    if ((NULL == fileName) || (0 == strlen(fileName)))
     {
         return -INI_ERR_NO_FILE_NAME;
     }
 
-    if ((NULL == v_pszSection) || (0 == strlen(v_pszSection)))
+    if ((NULL == section) || (0 == strlen(section)))
     {
         return -INI_ERR_NO_SECTION;
     }
 
-    if ((NULL == v_pszKey) || (0 == strlen(v_pszKey)))
+    if ((NULL == key) || (0 == strlen(key)))
     {
         return -INI_ERR_NO_KEY;
     }
 
-    if (NULL == v_pszValue)
+    if (NULL == value)
     {
         return -INI_ERR_NO_VALUE;
     }
 
     /* 分配内存 */
-    pszBuf = malloc(INI_MAX_FILE_SIZE);
-    if (NULL == pszBuf)
+    buf = malloc(INI_MAX_FILE_SIZE);
+    if (NULL == buf)
     {
         return -INI_ERR_MALLOC;
     }
 
     /* 分配内存 */
-    pszWrBuf = malloc(INI_MAX_FILE_SIZE);
-    if (NULL == pszWrBuf)
+    wrBuf = malloc(INI_MAX_FILE_SIZE);
+    if (NULL == wrBuf)
     {
-        free(pszBuf);
+        free(buf);
         return -INI_ERR_MALLOC;
     }
 
-    memset(pszWrBuf, 0, INI_MAX_FILE_SIZE);
+    memset(wrBuf, 0, INI_MAX_FILE_SIZE);
 
     /* 载入文件 */
-	if (0 == LoadIniFile(v_pszFileName, pszBuf, &iFileSize))
+	if (0 == LoadIniFile(fileName, buf, &fileSize))
 	{ /* 载入成功 */
-		ParseFile(pszBuf, v_pszSection, v_pszKey, &iSecStart, &iSecEnd,
-            &iKeyStart, &iKeyEnd, &iValueStart, &iValueEnd);
+		ParseFile(buf, section, key, &secBegin, &secEnd,
+            &keyBegin, &keyEnd, &valueBegin, &valueEnd);
 	}
 
-	if (UNKNOW_POS == iSecStart)
+	if (UNKNOW_POS == secBegin)
 	{ /* section位置未初始化 */
-		if (0 == iFileSize)
+		if (0 == fileSize)
 		{ /* 无文件 */
-			sprintf(pszWrBuf + iFileSize, "[%s]\n%s=%s\n",
-                v_pszSection, v_pszKey, v_pszValue);
+			sprintf(wrBuf + fileSize, "[%s]\n%s=%s\n",
+                section, key, value);
 		}
 		else
 		{ /* 无指定的section */
-			memcpy(pszWrBuf,pszBuf,iFileSize);
-			sprintf(pszWrBuf + iFileSize, "\n[%s]\n%s=%s\n",
-                v_pszSection, v_pszKey, v_pszValue);
+			memcpy(wrBuf,buf,fileSize);
+			sprintf(wrBuf + fileSize, "\n[%s]\n%s=%s\n",
+                section, key, value);
 		}
 	}
-	else if (UNKNOW_POS == iKeyStart)
+	else if (UNKNOW_POS == keyBegin)
 	{ /* 有指定的section，但是没有指定的key */
-		memcpy(pszWrBuf, pszBuf, iSecEnd);
-		sprintf(pszWrBuf + iSecEnd, "%s=%s\n", v_pszKey, v_pszValue);
-		memcpy(pszWrBuf + iSecEnd + strlen(v_pszKey) + iValueSize + 2,
-            pszBuf + iSecEnd, iFileSize - iSecEnd);
+		memcpy(wrBuf, buf, secEnd);
+		sprintf(wrBuf + secEnd, "%s=%s\n", key, value);
+		memcpy(wrBuf + secEnd + strlen(key) + valueSize + 2,
+            buf + secEnd, fileSize - secEnd);
 	}
 	else
 	{ /* 有指定的section，也有指定的key */
-		memcpy(pszWrBuf, pszBuf, iValueStart);
-		memcpy(pszWrBuf + iValueStart, v_pszValue, iValueSize);
-		memcpy(pszWrBuf + iValueStart + iValueSize, pszBuf + iValueEnd,
-            iFileSize - iValueEnd);
+		memcpy(wrBuf, buf, valueBegin);
+		memcpy(wrBuf + valueBegin, value, valueSize);
+		memcpy(wrBuf + valueBegin + valueSize, buf + valueEnd,
+            fileSize - valueEnd);
 	}
 
-	iRet = SaveIniFile(v_pszFileName, pszWrBuf);
+	ret = SaveIniFile(fileName, wrBuf);
 
-    free(pszWrBuf);
-    free(pszBuf);
+    free(wrBuf);
+    free(buf);
 
-    return iRet;
+    return ret;
 }
 
 /*******************************************************************************
@@ -591,18 +591,18 @@ int IniWriteString(
 说    明: 无
 *******************************************************************************/
 int IniReadInt(
-    const char *v_pszFileName, const char *v_pszSection, const char *v_pszKey,
-    int v_pszDefaultValue)
+    const char *fileName, const char *section, const char *key,
+    int defaultValue)
 {
-	char szValue[INT_VALUE_LEN] = {0};
+	char value[INT_VALUE_LEN] = {0};
 
-	if (0 != IniReadString(v_pszFileName, v_pszSection, v_pszKey,
-        szValue, INT_VALUE_LEN, NULL))
+	if (0 != IniReadString(fileName, section, key,
+        value, INT_VALUE_LEN, NULL))
 	{
-		return v_pszDefaultValue;
+		return defaultValue;
 	}
 
-	return atoi(szValue);
+	return atoi(value);
 }
 
 
