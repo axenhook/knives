@@ -7,8 +7,8 @@
 #include <assert.h>
 #include <time.h>
 
-typedef int32_t key_t;
-typedef int32_t value_t;
+typedef int key_t;
+typedef int value_t;
 
 typedef struct  {
 	key_t   key;
