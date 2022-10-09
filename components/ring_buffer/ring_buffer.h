@@ -7,30 +7,22 @@
 extern "C" {
 #endif
 
-#define RING_BUFFER_SIZE   1024
-
-typedef enum tagERR_RING_BUFFER_E
-{
-    ERR_RING_BUFFER_FULL = 100,
-    ERR_RING_BUFFER_EMPTY,
-} ERR_RING_BUFFER_E;
-
-
-typedef int rb_member_t;
-
-typedef struct ring_buffer
-{
-    rb_member_t member[RING_BUFFER_SIZE];
-    int head;  
-    int tail;
-    int length; 
+typedef struct ring_buffer {
+ unsigned char *buffer; /* the buffer holding the data */
+ unsigned int size; /* the size of the allocated buffer */
+ unsigned int in; /* data is added at offset (in % size) */
+ unsigned int out; /* data is extracted from off. (out % size) */
 } ring_buffer_t;
 
-void ring_buffer_reset(ring_buffer_t *rb);
-int ring_buffer_write(ring_buffer_t *rb, rb_member_t member);
-int ring_buffer_read(ring_buffer_t *rb, rb_member_t *member);
-int ring_buffer_length(ring_buffer_t *rb);
+ring_buffer_t *ring_buffer_init(unsigned int size);
+void ring_buffer_destroy(ring_buffer_t *rb);
+unsigned int ring_buffer_put(ring_buffer_t *rb, unsigned char *buffer, unsigned int len);
+unsigned int ring_buffer_get(ring_buffer_t *rb, unsigned char *buffer, unsigned int len);
 
+static inline unsigned int ring_buffer_len(ring_buffer_t *rb)
+{
+ return rb->in - rb->out;
+}
 
 #ifdef __cplusplus
 }

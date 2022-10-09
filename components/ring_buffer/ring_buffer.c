@@ -1,68 +1,80 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "ring_buffer.h"
 
-void ring_buffer_reset(ring_buffer_t *rb)
-{
-    rb->head = 0;
-    rb->tail = 0;
-    rb->length = 0;
+#define min(a,b) (((a) < (b)) ?  (a) : (b))
 
-    return;
+ring_buffer_t *ring_buffer_init(unsigned int size)
+{
+    ring_buffer_t *rb;
+
+    /* size must be a power of 2 */
+    assert(!(size & (size - 1)));
+
+    rb = malloc(sizeof(ring_buffer_t));
+    if (!rb) 
+    {
+        return NULL;
+    }
+
+    rb->buffer = malloc(size);
+    if (!rb->buffer)
+    {
+        free(rb);
+        return NULL;
+    }
+
+    rb->size = size;
+    rb->in = rb->out = 0;
+
+    return rb;
 }
 
-int ring_buffer_write(ring_buffer_t *rb, rb_member_t member)
-{
-    assert(rb != NULL);
-
-    if (rb->length >= RING_BUFFER_SIZE)
-    {
-        return -ERR_RING_BUFFER_FULL;
-    }
-
-    rb->member[rb->tail] = member;
-
-    //smp_wmb(); // SPSC queue should enable
-
-    if (++rb->tail >= RING_BUFFER_SIZE)
-    {
-        rb->tail = 0;
-    }
-
-    rb->length++;
-
-    return 0;
-}
-
-int ring_buffer_read(ring_buffer_t *rb, rb_member_t *member)
-{
-    assert(rb != NULL);
-    assert(member != NULL);
-
-    if (rb->length == 0)
-    {
-        return -ERR_RING_BUFFER_EMPTY;
-    }
-
-    *member = rb->member[rb->head];
-    
-    //smp_mb(); // SPSC queue should enable
-
-    if (++rb->head >= RING_BUFFER_SIZE)
-    {
-        rb->head = 0;
-    }
-
-    rb->length--;
-
-    return 0;
-}
-
-int ring_buffer_length(ring_buffer_t *rb)
+void ring_buffer_destroy(ring_buffer_t *rb)
 {
     assert(rb != NULL);
 
-    return rb->length;
+    free(rb->buffer);
+    free(rb);
 }
+
+unsigned int ring_buffer_put(ring_buffer_t *rb, unsigned char *buffer, unsigned int len)
+{
+    unsigned int l;
+
+    len = min(len, rb->size - rb->in + rb->out);
+
+    /* first put the data starting from rb->in to buffer end */
+    l = min(len, rb->size - (rb->in & (rb->size - 1)));
+    memcpy(rb->buffer + (rb->in & (rb->size - 1)), buffer, l);
+
+    /* then put the rest (if any) at the beginning of the buffer */
+    memcpy(rb->buffer, buffer + l, len - l);
+
+    rb->in += len;
+
+    return len;
+}
+
+unsigned int ring_buffer_get(ring_buffer_t *rb, unsigned char *buffer, unsigned int len)
+{
+    unsigned int l;
+
+    len = min(len, rb->in - rb->out);
+
+    /* first get the data from rb->out until the end of the buffer */
+    l = min(len, rb->size - (rb->out & (rb->size - 1)));
+    memcpy(buffer, rb->buffer + (rb->out & (rb->size - 1)), l);
+
+    /* then get the rest (if any) from the beginning of the buffer */
+    memcpy(buffer + l, rb->buffer, len - l);
+
+    rb->out += len;
+
+    return len;
+}
+
