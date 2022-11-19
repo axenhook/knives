@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <unistd.h>
+#include <stdio.h>
 #include "../log.h"
 
 int main(int argc, char *argv[])
@@ -16,6 +17,8 @@ int main(int argc, char *argv[])
     LOG_TRACE(log, "Test %d\n", i++);
 
     log_close(log);
+    
+    printf("test log finished\n");
 
     return 0;
 }

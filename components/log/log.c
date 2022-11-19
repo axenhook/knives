@@ -15,6 +15,7 @@ typedef struct log
 {
     FILE *hnd;  
     char  name[LOG_NAME_LEN];
+    unsigned char mode;
     int   lines;
 } log_t; 
 
@@ -108,17 +109,9 @@ void log_close(void *log)
     free(tmp_log);
 }
 
-void log_trace(void *log, const char *fmt, ...)
+void log_add_one_trace(void *log, void *buf)
 {
     log_t *tmp_log = (log_t *)log;
-    
-    #define BUF_LEN           1024
-    char buf[BUF_LEN];
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(buf, BUF_LEN, fmt, ap);
-    va_end(ap);
-
     add_one_trace(tmp_log->hnd, buf);
     tmp_log->lines++;
     if (tmp_log->lines >= MAX_LOG_LINES)
@@ -132,6 +125,18 @@ void log_trace(void *log, const char *fmt, ...)
             tmp_log->lines = 0;
         }        
     }
+}
+
+void log_trace(void *log, const char *fmt, ...)
+{
+    #define BUF_LEN           1024
+    char buf[BUF_LEN];
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, BUF_LEN, fmt, ap);
+    va_end(ap);
+
+    log_add_one_trace(log, buf);
 }
 
 
