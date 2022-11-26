@@ -4,39 +4,35 @@
 #include <string.h>
 
 #include "log.h"
+#include "log_mgr.h"
 
-#define PIDS_NUM   256
-
-typedef struct log_mgr
-{
-    int   level[PIDS_NUM];
-    void *log_hnd;
-} log_mgr_t; 
 
 log_mgr_t g_log_mgr;
 
-void log_mgr_set_level(unsigned int pid, int level)
+void log_mgr_set_level(unsigned int mid, int level)
 {
-    if (pid >= PIDS_NUM)
+    if (mid >= MIDS_NUM)
     {
         return;
     }
     
-    g_log_mgr.level[pid] = level;
+    g_log_mgr.level[mid] = level;
 
     return;
 }
 
-int log_mgr_get_level(unsigned int pid)
+void log_mgr_set_name(unsigned int mid, const char *name)
 {
-    if (pid >= PIDS_NUM)
+    if (mid >= MIDS_NUM)
     {
-        return -1;
+        return;
     }
     
-    return g_log_mgr.level[pid];
-}
+    strncpy(g_log_mgr.name[mid], name, MNAME_SIZE);
+    g_log_mgr.name[mid][MNAME_SIZE - 1] = '\0';
 
+    return;
+}
 
 int log_mgr_init(const char *log_name)
 {
@@ -59,9 +55,9 @@ void log_mgr_destroy(void)
     }
 }
 
-void log_mgr_trace(unsigned int pid, unsigned char level, const char *fmt, ...)
+void log_mgr_trace(unsigned int mid, unsigned char level, const char *fmt, ...)
 {
-    if (level > g_log_mgr.level[pid])
+    if (level > g_log_mgr.level[mid])
     {
         return;
     }
